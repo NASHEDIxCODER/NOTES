@@ -1331,3 +1331,192 @@ For learning:
 * request matters because if node full kubernetes won't schedule more pods. prevent overloading.
 
 ## StatefulSet ##
+
+* at the deployment databases names would be random Eg:saap-xyz, for sapp API it would be fine but for database Eg: postgresql this is the ptoblem.
+Databases need
+```
+stable name 
+stable Storage
+stable Identity
+```
+deployment doesn't gurantee this.
+
+```
+Example:
+
+Postgres Pod:
+postgres-xyz -> dies 
+deployment creates -> postgres-abc
+diffrent identity
+bad for clustring.
+```
+**Kubernetes Solution StatefulSet**
+```
+kind: StatefulSet
+```
+* statefulset manages applications that need.
+```
+Persistent Storage
+Stable Network Identity
+Ordered Deployment
+
+Examples
+PostgreSQL
+MongoDB
+kafka 
+Redis Cluster
+Elasticsearch
+Zookeeper
+```
+**Deployment VS StatefulSet**
+```
+Deployment:
+
+ghostline-abc
+ghostline-xyz
+ghostline-rty
+
+it genrates random.
+
+StatefulSet:
+postgres-0
+postgres-1
+postgres-2
+
+it creates always stable names. 
+stable.
+
+Deployment:
+
+pod Dies
+   |
+new random pods
+
+StatefulSet:
+
+postgres-1 Dies
+	|
+postgres-1 Returns
+```
+Example StatefulSet:
+```
+apiVersion: apps/v1
+
+kind: StatefulSet 
+
+metadata:
+  name: postgres
+
+spec:
+
+  serviceName: postgres
+  replicas: 3
+  
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      container:
+      - name: postgres
+        image: postgres
+
+
+Result:
+postgres-0
+postgres-1
+postgres-2
+```
+**Ordered Creation**
+* Deployment:
+```
+Pod1
+Pod2
+Pod3
+
+Created Together
+```
+* StatefulSet:
+```
+postgres-0
+    |
+postgres-1
+    |
+postgres-2
+
+one after another.
+```
+**Ordered Deletion**
+Deletion:
+```
+postgres-2
+    |
+postgres-1
+    |
+postgres-0
+
+Reverse order.
+
+** important for databases
+```
+
+**StatefulSet + Storage**
+* Most important feature Each pod gets its own volume.
+
+Example:
+```
+postgres-0
+    |
+   PVC
+    |
+postgres-pvc-0
+
+-----------------
+
+postgres-1
+    |
+   PVC
+    |
+postgres-pvc-1
+```
+seprate storage
+-> database replicas should not share disk.
+Each replicas store its won data.
+**Headless Service**
+StatefulSet usually use:
+``` 
+clusterIP: None
+```
+called a Headless service.
+
+* each pod gets DNS.
+Example:
+```
+postgres-0.postgres
+postgres-1.postgres
+postgres-2.postgres
+```
+pods can find each other. 
+Essential for cluster.
+
+**StatefulSet Lifecycle**
+```
+Create StatefulSet
+        |
+Create postgres-0
+        |
+Ready
+        |
+Create postgres-1
+        |
+Ready
+        |
+Create postgres-2
+```
+
+* use DEPLOYMENT for stateless application.
+* Use STATEFULSET for stateful applications.
