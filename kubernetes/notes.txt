@@ -878,3 +878,56 @@ PVC Deleted
 Storage Deleted
  -> Dangerous
 ```
+
+## Ingress ##
+* Every application needs its own ip which is expensive and messy.
+ so with ingress 
+```
+Internet
+      |
+      |
+Ingress
+ ┌────┴────┐
+ │         │
+GhostLine  API
+```
+* One publuc IP can run many applications.
+
+Example:
+```
+ghostline.com
+	|
+	V
+Ghostline Service
+
+api.ghostline.com
+	|
+	V
+  API service
+```
+Example YAML:
+```
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ghostline-ingress
+
+spec:
+  rules:
+  - host: ghopstline.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ghostline-service
+            port:
+              number: 80
+```
+Think:
+```
+Ingress = Reverse Proxy
+```
+Usually powered by NGINX Ingress Controller
+
