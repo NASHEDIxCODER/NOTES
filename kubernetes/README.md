@@ -931,3 +931,150 @@ Ingress = Reverse Proxy
 ```
 Usually powered by NGINX Ingress Controller
 
+## Secret ##
+* A secret is a kubernetes object used to store confidential information.
+Example: kind: Secret
+* secret is not exactly encryption By Default it is only base64 encoded anyone can decode it.
+* Real encryption usually comes from:
+-> etcd encryption
+-> cloud KMS
+-> Vault
+**Create Secret Using CLI**
+```
+$ kubectl create secret generic sapp-Secret \
+  --from-literal=DB_PASSWORD=subpersecret \
+  --from-literal=JWT_SECRET=myjwrkey
+
+Verify:
+$ kubectl get secrets
+ OutPut:
+  ghostline-secret
+```
+
+**Create Secret Using YAML**
+* First encode 
+```
+echo -n "supersecret" | base64
+```
+Secret YAML:
+```
+apiVersion: v1
+kind: Secret
+
+metadata:
+  name: ghostline-secret
+
+type: Opaque
+
+dtaa:
+  DB_PASSWORD: c3VwZXJzZWNyZXQ=
+
+Apply: 
+$ kubectl apply -f secret.yaml
+```
+**Secret Types**
+most common "Opaque" > generic secrets.
+
+others:
+```
+kubernetes.io/tls
+kubernetes.io/dockerconfigjson
+```
+Used for TLS certs and registry authentication.
+
+**Using Secrets As Environments Variables**
+most common method.
+Secret:
+```
+DB_PASSWORD 
+JWT_SECRET
+```
+Deployment:
+```
+env:
+- name: DB_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: ghostline-secret
+      key: DB_PASSWORD
+```
+Application:
+```
+Go: 
+password  := os.GetEnv("DB_PASSWORD")
+
+Result: supersecret
+```
+**Import Entire Secret**
+Instead of: env: many times.
+
+USE:
+```
+envFrom:
+- secretRef:
+    name: ghostline-secret
+
+Result:
+DB_PASSWORD
+JWT_SECRET
+SMTP_PASSWORD
+```
+Automatically loaded.
+
+**Mount Secret As Files**
+
+* Very common for certificates.
+
+secret: tls.cert, tls.key
+Mount:
+```
+volumeMounts:
+- name: tls-volume
+  mountPath: /certs
+
+VOLUME->>>>
+
+volumes:
+- name: tls-volume
+
+  secret:
+    secretName: ghostline-secret
+
+CONTAINER->>>>>>>>
+/certs/tls.cert
+/certs/tls.key
+```
+appear automatically
+
+**Secret Lifecycle**
+```
+Create Secret
+	|
+store Secret
+	|
+Deployment Refrences It
+	|
+Pod Receives Value
+	|
+Application Uses Value
+```
+
+**Commands**
+```
+create:
+$ kubectl get secrets
+
+List:
+$ kubectl get serets
+
+Describe:
+$ kubectl describe secret
+
+View YAML:
+$kubectl get secret NAME -o yaml
+
+Delete:
+$ kubectl delete secret NAME
+```
+
+
