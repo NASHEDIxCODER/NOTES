@@ -1181,3 +1181,153 @@ Liveness Fails
 Container Restart
 
 ```
+**Readiness VS Liveness**
+
+Readiness failure:
+```
+Remove From Traffic 
+DO NOT RESTART
+```
+Liveness Failure:
+```
+Restart Container
+```
+
+**Probe Methods**
+* HTTP Probe -> most common
+```
+httpGet:
+  path: /health
+  port: 8080
+
+API returns 
+200 OK
+
+*Healthy
+```
+* TCP Probe -> Check port
+```
+tcpSocket:
+  port: 5432
+
+Useful for Postgresql
+```
+**Command Probe**
+Run command inside container
+```
+exec:
+  command:
+  - cat
+  - /temp/healthy
+
+
+Success:
+Exit Code 0
+
+Healthy
+```
+## Resource Requests & Limits ##
+* Container can consume resources unless we restrict them.
+```
+No Limits
+    |
+One container
+    |
+Consumes Everything
+```
+* Kubernetes Solution
+Resources
+```
+Request
+Limit
+```
+**Request**
+Means minimum resources kubernetes gurantees.
+
+Example:
+```
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "250m"
+
+Meaning:
+need at least: 
+Ram = 256 MB
+cpu = 0.25 Core
+
+
+Visualize:
+* node has 16Gb RAM
+* sapp request: 256MB
+* kubernetes checks: Enough resources? 
+* if yes: Schedule Pod
+* if not:
+Pod Pending
+```
+**Limit**
+* Means maximum resources container can consume.
+Example:
+```
+resource:
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+
+Meaning:
+RAM <= 512 MB
+CPU <= 0.5 Core
+
+EXAMPLE 
+
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "250M"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+
+VISUALIZE:
+
+Memory
+
+256 MB ------------ Guranteed
+512 MB ------------ Maximum
+```
+**CPU Units**
+```
+1 CPU = 1000M
+
+Example:
+100m = 0.1 CPU
+250m = 0.25 CPU
+500m = 0.5 CPU
+1000m = 1 CPU
+
+Example: cpu: "500m"
+means : half CPU
+```
+**Memory Units**
+```
+Examples:
+128Mi
+256Mi
+512Mi
+1Gi
+2Gi
+
+
+Meaning:
+Mi = Mebibytes
+Gi = Gibibytes
+
+For learning:
+ 256Mi = 256 MB
+ 1Gi = 1GB
+```
+* if CPU limit Reached kubernetes slow Down, throttle CPU -> Container Remains running
+* if memory limit is reached result 00MKilled -> container dies.
+* request matters because if node full kubernetes won't schedule more pods. prevent overloading.
+
+## StatefulSet ##
