@@ -537,3 +537,344 @@ Config changes
 Restart Deployment
 ```
 
+### Storage ###
+-> Container are ephemeral if server crash data will lost.
+Example:
+```
+applicaton saves /uploads/profile.jpg
+* everything works 
+```
+* then container crashes 
+* kubernetes creates new container so data willbe lost
+```
+container
+    |
+temporary filesyatem 
+* when container dies filesystem dies too
+```
+**kubernetes Solution**
+* Volumes 
+-> A volume exists independently from the container.
+```
+container
+   |
+ Volume
+```
+-> Container can die. Volume remains 
+**What is Volume**
+-> A Volume is storage attached to a Pod.
+```
+Pod
+ ├── Container A
+ ├── Container B
+ └── Volume
+```
+* Both containers can access same files.
+
+**Basic Volume Example**
+```
+volumes: 
+- name: my-volume
+```
+Container mounts it:
+```
+volumeMounts:
+- name: my-volume
+  mountPath: /data
+
+Result:
+Inside Container
+/data
+
+acts like storage.
+```
+**Volume Types**
+-> most important types:
+```
+emptyDir
+hostPath
+PersistentVolume
+PersistentVolumeClaim
+```
+* emptyDir 
+-> simplest volume created when pod starts, Destroyed when pod dies.
+```
+apiVersion: v1
+kind: pod 
+metadata:
+  name: test
+spec:
+  containers:
+  - name: app
+    image: nginx
+
+  volumeMounts:
+  - name: cache
+    mountPath: /cache
+
+  volumes:
+  - name: cache
+    emptyDir: {}
+```
+```
+Behavior:
+Pod Starts
+    |
+Volume Created
+    |
+Data Stored
+    |
+Pod Deleted
+    |
+volume Deleted
+```
+-> used for cache, temporary files, processing data, scratch space NOT for databases / uploads.
+* hostPath 
+-> This mounts a real directory from the node.
+```
+Example node:
+worker Node
+/gome/storage 
+```
+Mount into Container:
+```
+volumes:
+- name: uploads
+  
+  hostPath:
+    path: /home/storage
+
+
+*Container:
+
+volumeMounts:
+- name: uploads
+  mountPath: /uploads
+```
+```
+Node Filesystem
+/home/storage
+	|
+	|
+    Container
+/uploads
+*same directory
+```
+create example:
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hostpath-demo
+
+spec:
+  container:
+  - name: nginx
+    image: nginx
+    volumeMounts:
+    - mountPath: /uploads
+      name: storage
+  volumes:
+  - name: storage
+    hostPath:
+      path: /data/uploads
+      type: DirectoryOrCreate
+```
+Node: /data/uploads
+container: /uploads -> same storage.
+
+DirectoryOrCreate -> if directory doesn't exist kubernetes creates it.
+Pros:
+-> easy, fast, good for learning
+Cons: 
+```
+Imagine Cluster:
+* Node 1
+* Node 2
+* Node 3
+
+Data stored on Node1
+Pod moves to Node 2 -> file disappear.
+Because storage stayed on node1.
+
+Therefore:
+Devlopment okey
+Testing okey
+Production Not
+ * Usually avoid hostpath in production.
+```
+* Persistent Volumes 
+-> now we enter real-world production.
+->> it solves problem pod move around >node fails > need storage independent of pods.
+kubernetees solution:
+```
+PersistentVolume (PV)
+
+Real Storage
+	|
+Persistent volume
+	|
+	pods
+```
+-> PV is a storage resource inside kubernetes.
+
+```
+Examples: 
+Local disk
+NFS
+AWS EBS
+Google Disk
+Ceph
+NAS
+
+* kubernetes treates all as storage.
+```
+Example PV
+```
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: sapp-pv
+spec:
+  capacity:
+    sstorage: 10Gi
+  accessModes:
+  - ReadWriteOnce
+  hostPath:
+    path: /mnt/sapp
+
+
+$ kubectl apply -f pv.yaml  -> apply
+
+Meaning:
+* 10 GB storage Available in cluster.
+Not attched to any pods yet.>>>
+
+* Persistent Volume 10 Gb  waiting
+
+```
+* Persistent Volume Claim(PVC)
+-> Now application asks for storage.
+```
+PV = Storage Resource
+PVC = Storage Request
+
+
+Example:
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sapp-pvc
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+$ kubectl apply -f pvc.yaml
+```
+kubernetes finds
+```
+PVC wants 5GB
+PV has 10GB
+match. and bind.
+
+PVC
+ |
+Bound
+ |
+ PV
+
+check:
+$ kubectl get pvc
+
+output:
+NAME		STATUS
+SAPP-PVC 	Bound
+```
+
+**Using PVC in Deployments**
+```
+apiVersion: app/v1
+kind: Deployment
+
+metadata:
+  name: ghostline
+spec:
+  replicas: 1
+  
+  selector:
+    matchLabels:
+    app: sapp
+  template:
+    metadata:
+    labeles:
+      app: sapp
+  
+    containers:
+    - name: sapp
+      image: sapp
+      volumeMounts:
+      - mountPath: /uploads
+        name: uploads
+    volumes:
+    - names: uploads
+      persistentVolumeClaim:
+        claimName: sapp-pvc
+
+Flow:
+sapp Pod
+   |
+  PVC
+   |
+  PV
+   |
+Physical
+storage
+```
+**Access Modes**
+-> important 
+* ReadWriteOnce (RWO)
+```
+One Node
+Read + write 
+* used by most databases.
+Example:
+PostgreSQL
+MySQL
+MongoDB
+```
+* ReadOnlyMany (ROX)
+```
+* may pods read only
+```
+* ReadWriteMany (RWX)
+```
+Many Pods 
+Read + Write
+
+
+Used with:
+NFS
+Ceph
+GlusterFS
+
+* Useful for uploads
+```
+**Reclaim Policies**
+-> control what happens when PVC deleted.
+* Retain 
+```
+PVC Deleted
+    |
+Data Stays
+-> safest
+```
+* Delete
+```
+PVC Deleted
+     |
+Storage Deleted
+ -> Dangerous
+```
