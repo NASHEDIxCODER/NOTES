@@ -1076,5 +1076,108 @@ $kubectl get secret NAME -o yaml
 Delete:
 $ kubectl delete secret NAME
 ```
+## Probes ##
+* If pod is running kubernetes sees STATUS= Running  Everything seems fine.
+-> But in Reality Database Connection Dead.
+-> Application Hung.
+-> 500 Internal Server Error.
+-> kubernetes still thinks Healthy
+* solution **probes**
+-> kubernetes Health checks.
+* these ar three types 
+```
+Startup Probe
+Readiness Probe
+Liveness Probe
+```
+**Startup Probe
+* it checks weather application started or not.
+useful for :
+```
+java apps 
+large APIs
+databases
+```
+that needs time
+Example:
+```
+atartupProbe:
+  httpGet:
+    Path: /health
+    Port: 8080
 
+  failureThreshold: 30
+  
+  periodSecond: 10
 
+Meaning:
+wait up to 300 seconds before failing startup.
+```
+
+**Readiness Probe**
+* Most important for APIs
+* it checks can this pod recieve traffic or not.
+
+with Readiness:
+```
+Pod starts
+    |
+Readiness Check
+    |
+  Ready?
+    | 
+   yes
+    | 
+Recieve Traffic
+```
+Example:
+```
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+
+  initiallyDelaySeconds: 5
+  periodSeconds: 10
+
+IF CHECK FAILS:
+* service removes pod
+no traffic sent 
+Pod still Running
+
+VISUALIZE:
+Service
+  |
+  |
+Healthy Pods Only
+```
+
+**Liveness Probe**
+
+* It checks weather application is alive or not.
+
+Example:
+```
+livenessProbe:
+  httpGet:
+    path: /heath
+    port: 8080
+  initialDelaySeconds: 30
+
+  periodSeconds: 10
+
+* IF PROBE FAILS REPEATEDLY
+kill Container
+
+then:
+Restart Container
+automatically
+
+VISUALIZE:
+App Hangs 
+   |
+Liveness Fails
+   |
+Container Restart
+
+```
