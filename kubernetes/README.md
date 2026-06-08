@@ -1797,3 +1797,38 @@ Describe:
 ```
 kubectl describe hpa sapp-hpa
 ```
+## RBAC (Rule Based Access Control) ##
+* Problem: if 3 devloper working in a company without RBAC then everyone can: Delete Pods, Delete secrets, Delete Databases.
+
+* kubernetes solution : RBAC.
+* comonents:
+```
+* Role 
+* RoleBinding
+* ClusterRole
+* ClusterRoleBinding
+
+```
+
+**Role** 
+* defines permissions
+* Example:
+```
+apiVersion: rbac.authorization.k8s.io/v1
+kind: role 
+metadata:
+  name: pod-reader
+rules:
+- apiGroups: [""]
+  resources:["pods"]
+
+  verbs:
+  - get
+  - list
+  - watch
+
+MEANING:
+ can view Pods 
+ cannot Delete Pods
+```
+
