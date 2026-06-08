@@ -1664,3 +1664,67 @@ $ kubectl delete job backup
 ```
 
 **CronJobs**
+* CronJobs is the automated version of Jobs.
+* need backup everyday job runs only once. so CronJob solves problem
+```
+CronJob
+    |
+creates jibs automatically
+
+Linux Cron :
+crontab -e 
+Example:
+0 2 * * *
+CronJobs uses same syntax
+```
+* Example
+```
+apiVersion: batch/v1
+kind: Cronjob
+metadata:
+  name: nightly-backup
+spec:
+  schedule:" 0 2 * * *"
+  jobTemplate:
+  spec:
+    containers:
+    - name:backup
+      image: backup-image
+    restartPolicy: Never
+
+Meaning :
+Every day
+2 AM
+Run Backup
+
+Flow:
+CronJob
+    |
+   2 AM
+    |
+Create Job
+    | 
+Create Pod
+    | 
+Backup Runs
+    | 
+Finish
+
+* Common Schedules
+-> every minute: * * * * *
+-> every hour: 0 * * * *
+-> Every day 2 AM: 0 2 * * *
+-> Every sunday: 0 0 * * 0
+
+* check cronjobs
+$ kubectl get cronjobs
+$ kubectl get cj
+
+* Describe CronJobs 
+$ kubectl describe cronjob nightly-bakcup
+
+* Delete CronJob
+$ kubectl delete cronjob nightly-backup
+
+
+
