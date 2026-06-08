@@ -1725,6 +1725,75 @@ $ kubectl describe cronjob nightly-bakcup
 
 * Delete CronJob
 $ kubectl delete cronjob nightly-backup
+```
+## HPA (Horizontal Pod Autoscaler) ##
+* PROBLEM: if a Deployment is runnig with replicas 3. everything works but suddenly user increases and cpu becomes 95%, 
+user sees slow responses traditional solutions is increase replicas manually,
+where we have to monitor constantly.
+
+* HPA solves this problem 
+* HPA automatically scales Pods based on : cpu, memory, custom metrices.
+* Example: 
+```
+current : 3 pods
+CPU: 85%
+Target: 50%
+HPA: Need more pods
+Result 3 pods -> 6 pods
+
+Visualize :
+
+Traffic Spike 
+	|
+    CPU 90%
+	|
+       HPA
+Creates Pods
+	| 
+   CPU Drops
+```
+* Example YAML
+```
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+
+metadata:
+  name: sapp-hpa
+spec:
+  scleTargetRef:
+    apiVersion: app/v1
+    kind: Deployment 
+    name: sapp
+  minReaplicas: 3
+  maxReplicas: 10
+  metrices:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50%
 
 
+Meaning:
+Minimum pods = 3
+Maximun Pods = 10
+Target CPU = 50%
 
+
+* if traffic disappears and cpu drops to 20% it will remove pods automatically but it will maintain minimum pods which is 3.
+
+```
+**Commands**
+create:
+```
+$ kubectl apply -f hpa.yaml
+```
+View:
+```
+$ kubectl get hpa
+```
+Describe:
+```
+kubectl describe hpa sapp-hpa
+```
