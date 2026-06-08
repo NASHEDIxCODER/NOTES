@@ -1520,3 +1520,147 @@ Create postgres-2
 
 * use DEPLOYMENT for stateless application.
 * Use STATEFULSET for stateful applications.
+## Storage Class ##
+* Automatic Storage provisioning
+```
+suppose if an app need PV and admin creates it manually then Devloper create PVC
+Problem: it is good for small amount of applications but on large number of applications,
+this would become a Huge headache. and it will be time consuming.
+
+Solution: storage Class
+```
+* Srtorage class defines what Storage to create how to create it when to create it.
+```
+StorageClasss
+	|
+Storage Template
+	|
+Create Storage Automatically
+
+AWS EBS
+Google Persistent Disk
+Azure Disk
+NFS 
+Ceph
+Longhorn
+
+# without StorageClass 
+Admin Creates PV
+	|
+Devloper Creates PVC
+	|
+PVC Bound To PV
+
+
+# with Storage Class 
+Devloper Creates PVC
+	|
+StorageClass Creates PV Automatically
+	|
+PVC Bound
+
+No manual PV Creation
+
+```
+**Example StorageClass**
+```
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+
+metadata:
+  name: fast-storage
+
+Provisioner:
+  kubernetes.io/aws-ebs
+
+parameters:
+  type: gp3
+
+
+MEANING:
+Use AWS EBS
+Disk Type GP3
+```
+Using StorageClass
+PVC:
+```
+apiVersion: v1
+kind: PersistentVolumeClaim
+
+metadata:
+  name: ghostline PVC
+
+spec:
+  storageClassName: fast-storage
+  accessModes:
+  - ReadwriteOnce
+
+  resources:
+    requests:
+      storage: 10Gi
+```
+* Default storage class is standard 
+
+## Jobs/CronJobs ##
+**Jobs**
+* the problem is for deployment Eg: API, runs forever. But some task run once 
+Eg: database backup, data migration, Genrate Reports, Import CSV, they shoud not run forever.
+* kubernetes solution : Job
+* a Job runs a Pod until completion 
+```
+run task
+   |
+Task finishes
+   |
+Pod stops 
+
+* Deployments -> runs forever 
+* Job run once
+```
+* Example:
+```
+apiVersion: batch/v1
+
+kind: Job
+metadata:
+  name: database-backup
+
+spec:
+
+  template:
+    spec:
+      container:
+      - name: backup
+        image: backup-image
+      restartPolicy: Never
+
+
+
+* FLOW
+Job starts
+    |
+Pod created
+    |
+Backup Runs
+    |
+Backup finishes
+    |
+Job Complete
+
+* Check jobs 
+$ kubectl get jobs
+
+output:
+NAME	 	Completion
+backup		1/1
+				->>>> success
+backup 		0/1
+     				->>>> something faild
+* Describe Job
+$ kubectl describe job backup
+* Delete Job
+$ kubectl delete job backup
+
+```
+
+**CronJobs**
