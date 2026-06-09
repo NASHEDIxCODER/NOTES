@@ -1831,4 +1831,183 @@ MEANING:
  can view Pods 
  cannot Delete Pods
 ```
+**RoleBinding**
+```
+connects 
+User
+ |
+Role
+```
+* Example:
+```
+kind: RoleBinding
+subjects:
+- kind: User
+  name: samrat
+
+roleRef:
+  kind:Role
+  name: pod-reader
+
+
+RESULT:
+ samrat 
+   |
+Pod-reader
+   | 
+Can View Pods
+```
+**ClusterRole**
+* Role for entire cluster 
+Example:
+```
+Read Nodes
+Read Namespaces
+Read StorageClass
+```
+**ClusterRoleBinding**
+
+* Attaches ClusterRole to users
+* Visualize 
+```
+  User
+   |
+RoleBinding
+   |
+  Role
+   |
+Permissions
+
+Devlopers can:
+view pods
+view logs
+
+cannot: 
+Delete Databases
+Read Secrets 
+
+RBAC enforeces that.
+
+```
+* Commands
+```
+* check permissions
+$ kubectl auth can-i get pods 
+
+* Check secret access
+$ kubectl auth can-i get secrets.
+
+## Helm ## 
+-> One of the Most important Production tools
+* it is a package manager for kubernetes.
+```
+# Helm Chart #
+    Helm Chart
+	|
+All kubernetes Resources
+```
+Example: 
+GhostLine Chart
+Deployment
+Service
+Ingress
+Secrets
+ConfigMap
+PVC
+
+* Bundled together
+```
+
+**commands**
+```
+* install
+$ helm install ghostline  -> everything deploys
+ 
+* Update
+$ helm upgrade ghostline 
+
+* Remove 
+$ helm uninstall ghostline
+```
+**Structure**
+```
+ghostline-chart/
+
+templates/
+
+deployment.yaml
+service.yaml
+ingress.yaml
+
+values.yaml
+
+Chart.yaml
+```
+
+## Network Policies ##
+* this is kubernetes firewall.
+* PROBLEM: Default kubernetes:
+```
+Pod A
+ ↕
+Pod B
+ ↕
+Pod C
+ ↕
+Pod D
+
+Everyone talks everyone
+```
+sapp API  & PostgreSQL -> any pod can connect : Bad security
+
+Kubernetes Solution: Network Policy -> firewall for pods
+
+Example: 
+``` 
+Ghostline
+    |
+can access
+    |
+PostgreSQL
+
+* Everything else blocked.
+```
+* visualize
+```
+without Policy:
+any pod
+   |
+PostgreSQL
+
+
+with policy:
+Ghostline API
+      |
+PostgreSQL
+ * others would be Blocked.
+```
+* EXAMPLE YAML:
+```
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-policy
+
+spec: 
+  podSelector:
+    matchLabels:
+      app: postgres
+  policyTypes:
+    - Ingress
+    ingrss:
+    - from:
+      - podSelector:
+        matchLabels:
+          app: ghostline
+
+* meaning :
+only ghostline Pods 
+can reach PostgreSQL Pods
+```
+
 
