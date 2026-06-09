@@ -2009,5 +2009,9 @@ spec:
 only ghostline Pods 
 can reach PostgreSQL Pods
 ```
+**Types**
+* Ingress -> who can enter?
+* Egress  -> who can leave?
+
 
 
